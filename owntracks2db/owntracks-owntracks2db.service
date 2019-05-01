@@ -1,0 +1,14 @@
+[Unit]
+Description=subscribe to location history
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+User=%i
+WorkingDirectory=/PATH/TO/owntracks-view/owntracks2db
+ExecStart=/PATH/TO/owntracks-view/owntracks2db/owntracks2db  --mqtt-broker 'REPLACE'  --mqtt-topic 'REPLACE'  --mqtt-client-id 'REPLACE'  --mqtt-user 'REPLACE'  --mqtt-pass 'REPLACE'  --db-user 'REPLACE'  --db-pass 'REPLACE'  --db-name 'REPLACE'
+
+[Install]
+WantedBy=multi-user.target

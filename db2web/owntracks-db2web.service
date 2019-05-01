@@ -1,0 +1,14 @@
+[Unit]
+Description=serve location history
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+User=%i
+WorkingDirectory=/PATH/TO/owntracks-view/db2web
+ExecStart=/PATH/TO/owntracks-view/db2web/db2web --host 'REPLACE'  --port REPLACE  --name 'REPLACE'  --user 'REPLACE'  --pass 'REPLACE'
+
+[Install]
+WantedBy=multi-user.target

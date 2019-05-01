@@ -1,0 +1,93 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>where was I?</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href = "http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+  <script src="/static/js/leaflet.js"></script>
+</head>
+<body>
+      <div id = "map" style = "width: 1920px; height: 1080px"></div>
+      <script>
+         // Creating map options
+         var mapOptions = {
+            center: [53.3464, -6.2610 ],
+            zoom: 12
+         }
+         
+         // Creating a map object
+         var map = new L.map('map', mapOptions);
+         
+         // Creating a Layer object
+         var layer = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+        
+         // Adding layer to the map
+         map.addLayer(layer);
+
+        var data = [
+  {{range $i, $d := .Location}}
+  {{if $i}}, {{end}}
+    [[ {{ $d.Longitude }}, {{ $d.Latitude }} ], {{ $d.TimeString }} ] 
+  {{end}}
+        ];
+        features = [];
+
+        dataLength = data.length;
+        console.log(data[0]);
+        for (i = dataLength-1; i > 0; i = i-1) {
+            feature = {
+               "type": "Feature",
+               "geometry": {
+                   "type": "LineString",
+                   "coordinates": [data[i][0], data[i-1][0]] 
+               },
+               "properties": { "index": i, "timestamp": data[i][1], }
+            }
+            features.push(feature);
+        }
+
+        var path = {
+            "type": "between2captures",
+            "features": features
+        };
+
+        function getOpacity(index) {
+            if (index > 250) {
+              return 0.2
+            }
+            // return (1.0 -  index / dataLength);
+            return ((1.0 -  index / 250) / 2.0) + 0.5;
+        }
+
+        function getColor(index) {
+            if (index > 25) {
+                return 'black'
+            }
+            return 'red'
+        }
+
+        function style(feature) {
+            return {
+                weight: 5,
+                opacity: getOpacity(feature.properties.index),
+                color: getColor(feature.properties.index),
+            };
+        }
+
+        var popup = L.popup();
+
+        function onMapClick(e) {
+            popup
+                .setLatLng(e.latlng)
+                .setContent("me at " + e.layer.feature.properties.timestamp)
+                .openOn(map);
+        }
+
+        var road = L.geoJson(path, {style: style});
+        road.addTo(map);
+
+        road.addEventListener('mouseover', onMapClick);
+
+      </script>
+</body>
+</html>
