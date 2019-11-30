@@ -73,7 +73,7 @@ func dbQuery(locations *Locations) error {
 	rows, err := db.Query(`
 	SELECT latitude, longitude, timestamp
 	FROM owntracks
-	WHERE locationaccuarcy<5000
+	WHERE locationaccuarcy<5000 AND latitude!=0 AND longitude!=0
 	ORDER BY timestamp DESC`)
 	if err != nil {
 		log.Println("query failed: ", err)
