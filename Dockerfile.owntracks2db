@@ -1,0 +1,29 @@
+FROM golang:1.13-alpine as builder
+
+RUN apk update  \
+ && apk add  --no-cache  upx  git  ca-certificates  tzdata  \
+ && update-ca-certificates  \
+ && addgroup  --system  app  \
+ && adduser  -S -G  app  app
+
+WORKDIR /app
+
+COPY . .
+
+RUN cd owntracks2db  \
+ && go get -u  \
+ && CGO_ENABLED=0  GOOS=linux  go build  -a  -ldflags '-w -extldflags "-static"'  -o /tmp/app  .  \
+ && upx  --best  /tmp/app  \
+ && upx  -t /tmp/app
+
+
+FROM scratch
+
+COPY --from=builder /usr/share/zoneinfo  /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
+COPY --from=builder /etc/passwd  /etc/passwd
+COPY --from=builder /tmp/app  /home/app/app
+
+USER app
+
+ENTRYPOINT ["/home/app/app"]
