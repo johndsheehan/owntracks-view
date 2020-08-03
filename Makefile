@@ -11,8 +11,8 @@ clean:
 	rm -f owntracks2db/owntracks2db
 
 docker:
-	docker build  --force-rm  -t db2web:$(TAG)  -f Dockerfile.db2web  .
-	docker build  --force-rm  -t owntracks2db:$(TAG)  -f Dockerfile.owntracks2db  .
+	docker build  --network=host  --force-rm  -t db2web:$(TAG)  -f Dockerfile.db2web  .
+	docker build  --network=host  --force-rm  -t owntracks2db:$(TAG)  -f Dockerfile.owntracks2db  .
 
 install:
 	cp  db2web/db2web  /usr/local/bin
