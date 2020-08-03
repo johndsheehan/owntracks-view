@@ -9,11 +9,16 @@ import (
 )
 
 const (
-	DBHost = "DBHOST"
-	DBPort = "DBPORT"
-	DBUser = "DBUSER"
-	DBPass = "DBPASS"
-	DBName = "DBNAME"
+	DBHost     = "DBHOST"
+	DBPort     = "DBPORT"
+	DBUser     = "DBUSER"
+	DBPass     = "DBPASS"
+	DBName     = "DBNAME"
+	Host       = "HOST"
+	HTTP       = "HTTP"
+	HTTPS      = "HTTPS"
+	FullChain  = "FULLCHAIN"
+	PrivateKey = "PRIVATEKEY"
 )
 
 var cfgMap map[string]string
@@ -36,22 +41,34 @@ func ConfigParse() error {
 }
 
 func parseCMDLine() {
-	host := flag.String("host", "", "db hostname")
-	port := flag.String("port", "", "db port")
-	user := flag.String("user", "", "db user")
-	pass := flag.String("pass", "", "db pass")
-	name := flag.String("name", "", "db name")
+	dbhost := flag.String("dbhost", "127.0.0.1", "db hostname (default 127.0.0.1")
+	dbport := flag.String("dbport", "5432", "db port (default 5432)")
+	dbuser := flag.String("dbuser", "", "db user")
+	dbpass := flag.String("dbpass", "", "db pass")
+	dbname := flag.String("dbname", "", "db name")
+
+	host := flag.String("host", "127.0.0.1", "host (default: 127.0.0.1)")
+	httpPort := flag.String("http", "5080", "http port (default 5080)")
+	httpsPort := flag.String("https", "5443", "https port (default 5443)")
+	fullChain := flag.String("fullchain", "", "fullchain.pem")
+	privateKey := flag.String("privatekey", "", "privKey.pem")
 
 	flag.Parse()
 
-	cfgMap[DBHost] = *host
-	cfgMap[DBPort] = *port
-	cfgMap[DBUser] = *user
-	cfgMap[DBPass] = *pass
-	cfgMap[DBName] = *name
+	cfgMap[DBHost] = *dbhost
+	cfgMap[DBPort] = *dbport
+	cfgMap[DBUser] = *dbuser
+	cfgMap[DBPass] = *dbpass
+	cfgMap[DBName] = *dbname
+
+	cfgMap[Host] = *host
+	cfgMap[HTTP] = *httpPort
+	cfgMap[HTTPS] = *httpsPort
+	cfgMap[FullChain] = *fullChain
+	cfgMap[PrivateKey] = *privateKey
 }
 
-func argFetch(name, fallback string, failOnDefault, logValue bool) (string, error) {
+func argFetch(name string, failOnDefault, logValue bool) (string, error) {
 	logMsg := ""
 	value, ok := os.LookupEnv(name)
 	if !ok {
@@ -64,7 +81,7 @@ func argFetch(name, fallback string, failOnDefault, logValue bool) (string, erro
 				return "", errors.New(msg)
 			}
 
-			value = fallback
+			value = ""
 			logMsg = "setting " + name + " to default: : "
 		}
 	} else {
@@ -80,40 +97,75 @@ func argFetch(name, fallback string, failOnDefault, logValue bool) (string, erro
 }
 
 func parseEnv() error {
-	host, err := argFetch(DBHost, "localhost", false, true)
+	dbhost, err := argFetch(DBHost, false, true)
 	if err != nil {
 		log.Println("failed to parse host config: ", err)
 		return err
 	}
-	cfgMap[DBHost] = host
+	cfgMap[DBHost] = dbhost
 
-	port, err := argFetch(DBPort, "5432", false, true)
+	dbport, err := argFetch(DBPort, false, true)
 	if err != nil {
 		log.Println("failed to parse port config: ", err)
 		return err
 	}
-	cfgMap[DBPort] = port
+	cfgMap[DBPort] = dbport
 
-	user, err := argFetch(DBUser, "", true, true)
+	dbuser, err := argFetch(DBUser, true, true)
 	if err != nil {
 		log.Println("failed to parse user: ", err)
 		return err
 	}
-	cfgMap[DBUser] = user
+	cfgMap[DBUser] = dbuser
 
-	pass, err := argFetch(DBPass, "", true, false)
+	dbpass, err := argFetch(DBPass, true, false)
 	if err != nil {
 		log.Println("failed to parse pass: ", err)
 		return err
 	}
-	cfgMap[DBPass] = pass
+	cfgMap[DBPass] = dbpass
 
-	name, err := argFetch(DBName, "", true, true)
+	dbname, err := argFetch(DBName, true, true)
 	if err != nil {
 		log.Println("failed to parse name: ", err)
 		return err
 	}
-	cfgMap[DBName] = name
+	cfgMap[DBName] = dbname
+
+	host, err := argFetch(Host, false, true)
+	if err != nil {
+		log.Println("failed to parse host: ", err)
+		return err
+	}
+	cfgMap[Host] = host
+
+	httpPort, err := argFetch(HTTP, false, true)
+	if err != nil {
+		log.Println("failed to parse http: ", err)
+		return err
+	}
+	cfgMap[HTTP] = httpPort
+
+	httpsPort, err := argFetch(HTTPS, false, true)
+	if err != nil {
+		log.Println("failed to parse  : ", err)
+		return err
+	}
+	cfgMap[HTTPS] = httpsPort
+
+	fullChain, err := argFetch(FullChain, false, true)
+	if err != nil {
+		log.Println("failed to parse fullchain: ", err)
+		return err
+	}
+	cfgMap[FullChain] = fullChain
+
+	privateKey, err := argFetch(PrivateKey, false, true)
+	if err != nil {
+		log.Println("failed to parse privateKey: ", err)
+		return err
+	}
+	cfgMap[PrivateKey] = privateKey
 
 	return nil
 }

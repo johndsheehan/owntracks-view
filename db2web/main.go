@@ -13,11 +13,6 @@ import (
 
 var db *sql.DB
 
-const (
-	CONN_HOST = "0.0.0.0"
-	CONN_PORT = "8081"
-)
-
 type Location struct {
 	Latitude   float32
 	Longitude  float32
@@ -41,7 +36,7 @@ func mapRender(w http.ResponseWriter, r *http.Request) {
 	parsedTemplate, _ := template.ParseFiles("templates/mapTemplate.html")
 	err = parsedTemplate.Execute(w, locations)
 	if err != nil {
-		log.Printf("failed to parse template: ", err)
+		log.Println("failed to parse template: ", err)
 		return
 	}
 }
@@ -107,6 +102,29 @@ func dbQuery(locations *Locations) error {
 	return nil
 }
 
+func redirectToHTTPS(colonPort, colonTLSPort string) {
+	go func(colonPort, colonTLSPort string) {
+		redirect := func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("http request from: %s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+			host := r.Host
+			if strings.HasSuffix(r.Host, colonPort) {
+				host = strings.TrimSuffix(host, colonPort)
+			}
+
+			url := fmt.Sprintf("https://%s%s/%s", host, colonTLSPort, r.RequestURI)
+			log.Printf("redirect to: %s", url)
+
+			http.Redirect(w, r, url, http.StatusMovedPermanently)
+		}
+
+		err := http.ListenAndServe(colonPort, http.HandlerFunc(redirect))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(colonPort, colonTLSPort)
+}
+
 func main() {
 	err := ConfigParse()
 	if err != nil {
@@ -119,12 +137,33 @@ func main() {
 	}
 	defer db.Close()
 
+	useTLS := false
+	if Config(FullChain) != "" && Config(PrivateKey) != "" {
+		useTLS = true
+	}
+
 	fileServer := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fileServer))
 
 	http.HandleFunc("/", mapRender)
-	err = http.ListenAndServe(CONN_HOST+":"+CONN_PORT, nil)
-	if err != nil {
-		log.Fatal("failed to start server: ", err)
+
+	if useTLS {
+		colonPort := ":" + Config(HTTP)
+		colonTLSPort := ":" + Config(HTTPS)
+		go redirectToHTTPS(colonPort, colonTLSPort)
+
+		log.Printf("serving https on %s\n", colonTLSPort)
+		err := http.ListenAndServeTLS(colonTLSPort, Config(FullChain), Config(PrivateKey), nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		host := Config(Host) + ":" + Config(HTTP)
+
+		log.Printf("serving http on %s", host)
+		err = http.ListenAndServe(host, nil)
+		if err != nil {
+			log.Fatal("failed to start server: ", err)
+		}
 	}
 }
