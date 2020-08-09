@@ -22,8 +22,13 @@ FROM scratch
 COPY --from=builder /usr/share/zoneinfo  /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt  /etc/ssl/certs/
 COPY --from=builder /etc/passwd  /etc/passwd
+
+COPY  --from=builder  /app/db2web/static  /home/app/static
+COPY  --from=builder  /app/db2web/templates  /home/app/templates
+
 COPY --from=builder /tmp/app  /home/app/app
 
+WORKDIR /home/app
 USER app
 
 ENTRYPOINT ["/home/app/app"]
